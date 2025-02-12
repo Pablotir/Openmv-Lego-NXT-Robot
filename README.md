@@ -5,7 +5,8 @@ This is currently a WIP for my robot
 ## Currently using
 - Actobotics Channels for the frame
 - 3D printed wheels hubs using Lego motorcycle tires
-- Lego NXT Brick
+- 2 Tetrix omni wheels
+- Lego NXT Brick running Lejos CFW
 - 1 Lego NXT ultrasonic sensor
 - 2 Lego NXT motors (only for V1 until I upgrade to a full servo arm)
 - 2 HiTechnic motor controllers for Tetrix
