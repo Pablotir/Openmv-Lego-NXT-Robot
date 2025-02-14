@@ -11,33 +11,26 @@ public class motorBlue {
     private static final int ULTRASONIC_THRESHOLD = 20; // cm
 
     public static void main(String[] args) {
-        // Initialize Tetrix motor controller
         TetrixControllerFactory controllerFactory = new TetrixControllerFactory(SensorPort.S1);
         TetrixMotorController motorController = controllerFactory.newMotorController();
         TetrixMotorController motorController2 = controllerFactory.newMotorController();
 
-        // Get regulated motors from the controllers
-        TetrixRegulatedMotor backLeft = motorController.getRegulatedMotor(TetrixMotorController.MOTOR_1);     // 3-inch wheel
-        TetrixRegulatedMotor backRight = motorController.getRegulatedMotor(TetrixMotorController.MOTOR_2);    // 4-inch wheel
-        TetrixRegulatedMotor frontLeft = motorController2.getRegulatedMotor(TetrixMotorController.MOTOR_1);   // 3-inch wheel
-        TetrixRegulatedMotor frontRight = motorController2.getRegulatedMotor(TetrixMotorController.MOTOR_2);  // 4-inch wheel
+        TetrixRegulatedMotor backLeft = motorController.getRegulatedMotor(TetrixMotorController.MOTOR_1);
+        TetrixRegulatedMotor backRight = motorController.getRegulatedMotor(TetrixMotorController.MOTOR_2);
+        TetrixRegulatedMotor frontLeft = motorController2.getRegulatedMotor(TetrixMotorController.MOTOR_1);
+        TetrixRegulatedMotor frontRight = motorController2.getRegulatedMotor(TetrixMotorController.MOTOR_2);
 
-        // Set the speed of the motors
         backLeft.setSpeed(100);
         frontLeft.setSpeed(100);
         backRight.setSpeed(100);
         frontRight.setSpeed(100);
 
-        // Initialize Ultrasonic Sensor
         UltrasonicSensor ultrasonic = new UltrasonicSensor(SensorPort.S2);
 
-        // LCD and Bluetooth initialization
         LCD.clear();
         LCD.drawString("Connecting...", 0, 0);
 
-        // Attempt to connect to the HC-06 module
         BTConnection connection = Bluetooth.connect(HC06_ADDR_OR_NAME, NXTConnection.RAW);
-
         if (connection == null) {
             LCD.clear();
             LCD.drawString("Conn failed", 0, 0);
@@ -49,13 +42,11 @@ public class motorBlue {
 
         DataInputStream dis = connection.openDataInputStream();
 
-        // Main loop to read commands and control motors
         while (true) {
             try {
                 if (dis.available() > 0) {
                     String command = dis.readLine().trim().toLowerCase();
 
-                    // Check ultrasonic sensor distance
                     int distance = ultrasonic.getDistance();
                     if (distance <= ULTRASONIC_THRESHOLD) {
                         Sound.beep();
@@ -65,7 +56,6 @@ public class motorBlue {
                         continue;
                     }
 
-                    // Execute motor commands
                     switch (command) {
                         case "forward":
                             moveForward(backLeft, frontLeft, backRight, frontRight);
@@ -87,6 +77,9 @@ public class motorBlue {
                             Delay.msDelay(1050);
                             stopMotors(backLeft, frontLeft, backRight, frontRight);
                             break;
+                        case "pause":
+                            Delay.msDelay(5000);
+                            break;
                         default:
                             stopMotors(backLeft, frontLeft, backRight, frontRight);
                             LCD.clear();
@@ -101,28 +94,25 @@ public class motorBlue {
             }
         }
 
-        // Close connection
         try {
             dis.close();
             connection.close();
         } catch (Exception e) {
-            // Ignore errors on close
         }
     }
 
-    // Motor control methods
     public static void moveForward(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft, TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
-        backLeft.rotate(-918, true);   // 3-inch wheel
-        frontLeft.rotate(-918, true);  // 3-inch wheel
-        backRight.rotate(-688, true);  // 4-inch wheel
-        frontRight.rotate(-688, true); // 4-inch wheel
+        backLeft.rotate(-918, true);
+        frontLeft.rotate(-918, true);
+        backRight.rotate(-688, true);
+        frontRight.rotate(-688, true);
     }
 
     public static void moveBackward(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft, TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
-        backLeft.rotate(918, false);   // 3-inch wheel
-        frontLeft.rotate(918, false);  // 3-inch wheel
-        backRight.rotate(688, false);  // 4-inch wheel
-        frontRight.rotate(688, false); // 4-inch wheel
+        backLeft.rotate(918, false);
+        frontLeft.rotate(918, false);
+        backRight.rotate(688, false);
+        frontRight.rotate(688, false);
     }
 
     public static void rotateLeft(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft, TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
