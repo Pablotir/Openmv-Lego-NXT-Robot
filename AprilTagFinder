@@ -1,0 +1,118 @@
+import sensor, image, time, machine
+from machine import UART
+
+# Initialize UART
+uart = UART(1, 9600)
+uart.init(9600, bits=8, parity=None, stop=1, timeout_char=1000)
+
+# State constants
+INIT, NAVIGATING, SEARCHING = 0, 1, 2
+current_state = INIT
+current_target = 0
+last_command_time = time.ticks_ms()
+search_rotations = 0
+ROTATION_DELAY = 2500  # Increase to 2500ms for 90° turns
+
+def send_command(cmd):
+    global last_command_time
+    if time.ticks_diff(time.ticks_ms(), last_command_time) >= 3000:
+        uart.write(cmd + "\n")
+        last_command_time = time.ticks_ms()
+        print(f"CMD: {cmd}")
+        return True
+    return False
+
+sensor.reset()
+sensor.set_pixformat(sensor.RGB565)
+sensor.set_framesize(sensor.QQVGA)
+sensor.skip_frames(time=2000)
+
+while True:
+    img = sensor.snapshot()
+    tags = [t.id for t in img.find_apriltags()]
+    print(f"Tags: {tags} | State: {current_state} | Target: {current_target}")
+
+    if current_state == INIT:
+        if 0 in tags:
+            print("Found start tag!")
+            uart.write("forward\n")
+            time.sleep_ms(1000)
+            uart.write("left\n")
+            time.sleep_ms(ROTATION_DELAY)  # Wait for full left turn
+            uart.write("forward\n")
+            time.sleep_ms(1000)
+            current_target = 1
+            current_state = NAVIGATING
+
+    elif current_state == NAVIGATING:
+        if current_target > 10:
+            send_command("stop")
+            break
+
+        if current_target in tags:
+            print(f"Reached tag {current_target}")
+            uart.write("forward\n")
+            time.sleep_ms(1500)
+            uart.write("forward\n")
+            time.sleep(1)
+            current_target += 1
+        else:
+            print("Lost tag - START SEARCH")
+            current_state = SEARCHING
+            search_rotations = 0
+
+    elif current_state == SEARCHING:
+        # Store current rotation count for reset operation
+        rotations_to_undo = search_rotations
+
+        if search_rotations < 4:
+            print(f"Rotating right ({search_rotations+1}/4)")
+            if send_command("right"):
+                search_rotations += 1
+                time.sleep_ms(ROTATION_DELAY)  # Increased delay
+
+            # Check for tags 3 times with delays
+            found = False
+            for _ in range(3):
+                img = sensor.snapshot()
+                if current_target in [t.id for t in img.find_apriltags()]:
+                    found = True
+                    break
+                time.sleep_ms(500)
+
+            if found:
+                print(f"Found target {current_target} after {search_rotations} rights!")
+                # Rotate back EXACT number of rotations
+                print(f"Undoing {search_rotations} rotations")
+                if(search_rotations == 1):
+                    uart.write("left\n")
+                    time.sleep_ms(ROTATION_DELAY)
+                elif(search_rotations == 2):
+                    uart.write("left\n")
+                    time.sleep_ms(ROTATION_DELAY)
+                    uart.write("left\n")
+                    time.sleep_ms(ROTATION_DELAY)
+                elif(search_rotations == 3):
+                    uart.write("left\n")
+                    time.sleep_ms(ROTATION_DELAY)
+                    uart.write("left\n")
+                    time.sleep_ms(ROTATION_DELAY)
+                    uart.write("left\n")
+                    time.sleep_ms(ROTATION_DELAY)
+                # Move forward twice
+                uart.write("forward\n")
+                time.sleep_ms(1050)
+                uart.write("forward\n")
+                time.sleep_ms(1050)
+
+                # Reset search and advance target
+                current_target += 1
+                search_rotations = 0
+                current_state = NAVIGATING
+                continue
+        else:
+            print("Full rotation completed")
+            uart.write("forward\n")
+            time.sleep_ms(1000)
+            search_rotations = 0
+            current_state = NAVIGATING
