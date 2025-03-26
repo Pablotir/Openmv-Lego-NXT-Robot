@@ -10,6 +10,21 @@ public class motorBlue {
     private static final String HC06_ADDR_OR_NAME = "HC-06";
     private static final int ULTRASONIC_THRESHOLD = 20; // cm
 
+    // For 4-inch wheels, the circumference is ~12.57 inches.
+    // To move 24 inches forward (2 ft), each wheel must turn:
+    //   24 / 12.57 ≈ 1.91 rotations, i.e. 1.91 * 360 ≈ 688 degrees.
+    private static final int FORWARD_ROTATION_DEGREES = 450;
+    
+    // To strafe 12 inches (1 ft), the wheels need to turn:
+    //   12 / 12.57 ≈ 0.955 rotations, i.e. 0.955 * 360 ≈ 344 degrees.
+    private static final int STRAFE_ROTATION_DEGREES = 344;
+    
+    // For an in-place 90° turn:
+    // Assuming an effective track width of ~10 inches, the arc each wheel travels is:
+    //   (pi * 10) / 4 inches. Dividing by the wheel circumference (12.57") and converting
+    //   to degrees gives about 225° of wheel rotation.
+    private static final int TURN_ROTATION_DEGREES = 688;
+
     public static void main(String[] args) {
         TetrixControllerFactory controllerFactory = new TetrixControllerFactory(SensorPort.S1);
         TetrixMotorController motorController = controllerFactory.newMotorController();
@@ -20,10 +35,11 @@ public class motorBlue {
         TetrixRegulatedMotor frontLeft = motorController2.getRegulatedMotor(TetrixMotorController.MOTOR_1);
         TetrixRegulatedMotor frontRight = motorController2.getRegulatedMotor(TetrixMotorController.MOTOR_2);
 
-        backLeft.setSpeed(100);
-        frontLeft.setSpeed(100);
-        backRight.setSpeed(100);
-        frontRight.setSpeed(100);
+        // Set speeds (adjust as needed)
+        backLeft.setSpeed(75);
+        frontLeft.setSpeed(75);
+        backRight.setSpeed(75);
+        frontRight.setSpeed(75);
 
        // UltrasonicSensor ultrasonic = new UltrasonicSensor(SensorPort.S2);
 
@@ -47,7 +63,8 @@ public class motorBlue {
                 if (dis.available() > 0) {
                     String command = dis.readLine().trim().toLowerCase();
 
-                   // int distance = ultrasonic.getDistance();
+                    // Uncomment and adjust obstacle handling if needed.
+                    // int distance = ultrasonic.getDistance();
                     // if (distance <= ULTRASONIC_THRESHOLD) {
                     //     Sound.beep();
                     //     stopMotors(backLeft, frontLeft, backRight, frontRight);
@@ -69,18 +86,16 @@ public class motorBlue {
                             break;
                         case "left":
                             rotateLeft(backLeft, frontLeft, backRight, frontRight);
-                            Delay.msDelay(1200);
-                            //Delay.msDelay(1312);
+                            Delay.msDelay(1400);
                             stopMotors(backLeft, frontLeft, backRight, frontRight);
                             break;
                         case "right":
                             rotateRight(backLeft, frontLeft, backRight, frontRight);
-                            Delay.msDelay(1200);
-                           // Delay.msDelay(1312);
+                            Delay.msDelay(1400);
                             stopMotors(backLeft, frontLeft, backRight, frontRight);
                             break;
                         case "pause":
-                            Delay.msDelay(5000);
+                            Delay.msDelay(3000);
                             break;
                         default:
                             stopMotors(backLeft, frontLeft, backRight, frontRight);
@@ -103,37 +118,56 @@ public class motorBlue {
         }
     }
 
-    public static void moveForward(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft, TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
-        backLeft.rotate(-918, true);
-        frontLeft.rotate(-918, true);
-        backRight.rotate(-688, true);
-        frontRight.rotate(-688, true);
+    public static void rotateRight(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft,
+                                   TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
+        backLeft.rotate(-FORWARD_ROTATION_DEGREES, true);
+        frontLeft.rotate(-FORWARD_ROTATION_DEGREES, true);
+        backRight.rotate(-FORWARD_ROTATION_DEGREES, true);
+        frontRight.rotate(FORWARD_ROTATION_DEGREES, true);
     }
 
-    public static void moveBackward(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft, TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
-        backLeft.rotate(918, false);
-        frontLeft.rotate(918, false);
-        backRight.rotate(688, false);
-        frontRight.rotate(688, false);
+    public static void rotateLeft(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft,
+                                    TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
+        backLeft.rotate(FORWARD_ROTATION_DEGREES, false);
+        frontLeft.rotate(FORWARD_ROTATION_DEGREES, false);
+        backRight.rotate(FORWARD_ROTATION_DEGREES, false);
+        frontRight.rotate(-FORWARD_ROTATION_DEGREES, false);
     }
 
-    public static void rotateLeft(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft, TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
-        int rotationDegrees = 90;
-        backLeft.rotate(rotationDegrees, true);
-        frontLeft.rotate(-rotationDegrees, true);
-        backRight.rotate(rotationDegrees, true);
-        frontRight.rotate(-rotationDegrees, true);
+    public static void moveBackward(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft,
+                                  TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
+        backLeft.rotate(TURN_ROTATION_DEGREES, true);
+        frontLeft.rotate(-TURN_ROTATION_DEGREES, true);
+        backRight.rotate(TURN_ROTATION_DEGREES, true);
+        frontRight.rotate(TURN_ROTATION_DEGREES, true);
     }
 
-    public static void rotateRight(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft, TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
-        int rotationDegrees = 90;
-        backLeft.rotate(-rotationDegrees, true);
-        frontLeft.rotate(rotationDegrees, true);
-        backRight.rotate(-rotationDegrees, true);
-        frontRight.rotate(rotationDegrees, true);
+    public static void moveForward(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft,
+                                   TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
+        backLeft.rotate(-TURN_ROTATION_DEGREES, true);
+        frontLeft.rotate(TURN_ROTATION_DEGREES, true);
+        backRight.rotate(-TURN_ROTATION_DEGREES, true);
+        frontRight.rotate(-TURN_ROTATION_DEGREES, true);
     }
 
-    public static void stopMotors(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft, TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
+    public static void strafeLeft(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft,
+                                  TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
+        backLeft.rotate(STRAFE_ROTATION_DEGREES, true);
+        frontLeft.rotate(STRAFE_ROTATION_DEGREES, true);
+        backRight.rotate(-STRAFE_ROTATION_DEGREES, true);
+        frontRight.rotate(STRAFE_ROTATION_DEGREES, true);
+    }
+
+    public static void strafeRight(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft,
+                                   TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
+        backLeft.rotate(-STRAFE_ROTATION_DEGREES, true);
+        frontLeft.rotate(-STRAFE_ROTATION_DEGREES, true);
+        backRight.rotate(STRAFE_ROTATION_DEGREES, true);
+        frontRight.rotate(-STRAFE_ROTATION_DEGREES, true);
+    }
+
+    public static void stopMotors(TetrixRegulatedMotor backLeft, TetrixRegulatedMotor frontLeft,
+                                  TetrixRegulatedMotor backRight, TetrixRegulatedMotor frontRight) {
         backLeft.stop();
         frontLeft.stop();
         backRight.stop();
